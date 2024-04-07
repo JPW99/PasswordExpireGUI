@@ -9,6 +9,7 @@ Version : 0.1 POC (NOT TO BE USED IN PROD)
 Add-Type -AssemblyName System.Windows.Forms
 
 $MainForm = New-Object System.Windows.Forms.Form
+$ErrorForm = New-Object System.Windows.Forms.Form
 
 # Define sizes of the labels and text boxes 
 $textboxSize = New-Object System.Drawing.Size(140,20)
@@ -16,7 +17,19 @@ $labelSize = New-Object System.Drawing.Size(168,20)
 
 $MainForm.Size = '480,300'
 $MainForm.Text = "POC - PassExpire GUI"
-$MainForm.BackColor = "#ffffff"
+$MainForm.BackColor = "#9FADEA"
+$MainForm.MaximizeBox = $false
+
+$ErrorForm.Size = '275,175'
+$ErrorForm.Text = "Error"
+$ErrorForm.BackColor = "#9FADEA"
+$ErrorForm.MaximizeBox = $false
+
+$Error_Title = New-Object system.Windows.Forms.Label
+$Error_Title.text = "Error - Unable to find User"
+$Error_Title.AutoSize = $true
+$Error_Title.location = New-Object System.Drawing.Point(20,50)
+$Error_Title.Font = 'Microsoft Sans Serif,13'
 
 $Titel = New-Object system.Windows.Forms.Label
 $Titel.text = "POC - PassExpire GUI"
@@ -53,16 +66,16 @@ $Textbox_ExpireDate.Location = New-Object System.Drawing.Size(170,125)
 $Textbox_ExpireDate.Size = $textboxSize
 $Textbox_ExpireDate.ReadOnly = $true
 
-$label_Email = New-Object System.Windows.Forms.Label
-$label_Email.Location = New-Object System.Drawing.Size(10,150)
-$label_Email.Size = $labelSize
-$label_Email.TextAlign = "MiddleCenter"
-$label_Email.Text = "Email"
+$label_DisplayName = New-Object System.Windows.Forms.Label
+$label_DisplayName.Location = New-Object System.Drawing.Size(10,150)
+$label_DisplayName.Size = $labelSize
+$label_DisplayName.TextAlign = "MiddleCenter"
+$label_DisplayName.Text = "Display Name"
      
-$textbox_Email = New-Object System.Windows.Forms.TextBox
-$textbox_Email.Location = New-Object System.Drawing.Size(21,175)
-$textbox_Email.Size = $textboxSize
-$textbox_Email.ReadOnly = $true
+$textbox_DisplayName = New-Object System.Windows.Forms.TextBox
+$textbox_DisplayName.Location = New-Object System.Drawing.Size(21,175)
+$textbox_DisplayName.Size = $textboxSize
+$textbox_DisplayName.ReadOnly = $true
 
 $Button_Search = New-Object System.Windows.Forms.button
     $Button_Search.Size = New-Object System.Drawing.Size(75,23)
@@ -70,22 +83,17 @@ $Button_Search = New-Object System.Windows.Forms.button
     $Button_Search.TextAlign = "MiddleCenter"
     $Button_Search.Text = "Search"
     $Button_Search.BackColor = "74, 225, 88"
-    $Button_Search.Add_Click<#({
-
-        try {
-           $Details = Get-Aduser $Textbox_Username.text -properties DisplayName,msDS-UserPasswordExpiryTimeComputed,EmailAddress
-           $Details.DisplayName
-           $Details.msDS-UserPasswordExpiryTimeComputed
-           $Details.EmailAddress
-
-           $textbox_Email.Text = $Details.EmailAddress
-           $Textbox_ExpireDate.Text = [datetime]::FromFileTime($Details.msDS-UserPasswordExpiryTimeComputed)
-                    }
-        catch {
-            #Fails to find user message
+    $button_Click = {try {
+        $Username = $Textbox_Username.Text
+        $Details = Get-Aduser $Username -properties DisplayName,msDS-UserPasswordExpiryTimeComputed
+        $textbox_DisplayName.text = $Details.DisplayName
+        $ExpireDate = [datetime]::FromFileTime($Details."msDS-UserPasswordExpiryTimeComputed")
+        $Textbox_ExpireDate.text = $ExpireDate
         }
-
-    })
-    #>
-$MainForm.controls.AddRange(@($Titel,$Description,$Label_Username,$Textbox_Username,$textbox_Email,$label_Email,$Label_ExpireDate,$Textbox_ExpireDate,$Button_Search))
+    catch {
+        $ErrorForm.controls.AddRange(@($Error_Title))
+        [void]$ErrorForm.ShowDialog()
+        }}
+    $Button_Search.add_click($button_Click)
+$MainForm.controls.AddRange(@($Titel,$Description,$Label_Username,$Textbox_Username,$textbox_DisplayName,$label_DisplayName,$Label_ExpireDate,$Textbox_ExpireDate,$Button_Search))
 [void]$MainForm.ShowDialog()
